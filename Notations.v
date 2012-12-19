@@ -25,6 +25,8 @@ Reserved Notation "∏_{ x : A } f" (at level 0, x at level 99).
 Reserved Notation "∐_{ x } f" (at level 0, x at level 99).
 Reserved Notation "∐_{ x : A } f" (at level 0, x at level 99).
 
+Reserved Notation "⟨ x ⟩" (at level 10).
+
 (* I'm not terribly happy with this notation, but '('s don't work
    because they interfere with things like [prod]s and grouping,
    and '['s interfere with list notation in Program. *)
@@ -36,6 +38,7 @@ Reserved Notation "[ x ]" (at level 0, x at level 200).
 
 Reserved Notation "∫ F" (at level 0).
 
+Delimit Scope ideal_scope with ideal.
 Delimit Scope ring_scope with ring.
 Delimit Scope ring_unit_scope with ring_unit.
 Delimit Scope ring_morphism_scope with ring_morphism.

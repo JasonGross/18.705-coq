@@ -1,5 +1,5 @@
 Require Import Setoid.
-Require Export Ring Ring_theory Ensembles.
+Require Export Ring Ring_theory.
 Require Import Common Notations.
 
 Set Implicit Arguments.
@@ -114,3 +114,5 @@ End ring.
 Bind Scope ring_unit_scope with Runit.
 
 Notation "u ⁻¹" := (Runit_inverse u) : ring_unit_scope.
+
+Hint Rewrite @rmul_x_O @rmul_O_x : rings.

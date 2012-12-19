@@ -652,6 +652,15 @@ Ltac specialize_hyp_with_evars E :=
                  specialize (E y')
          end.
 
+(* converts existentials in the goal into evars *)
+Ltac existentials_to_evars :=
+  repeat match goal with
+           | [ |- context[?x] ] => atomic x; is_evar x;
+                                   let t := type of x in
+                                   let x' := fresh in
+                                   set (x' := x)
+         end.
+
 (* rewrite fails if hypotheses depend on one another.  simultaneous rewrite does not *)
 Ltac simultaneous_rewrite' E :=
   match type of E with
