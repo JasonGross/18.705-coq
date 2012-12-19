@@ -1,6 +1,7 @@
 MODULES    := Common \
-	Notations #\
-	Ring
+	Notations \
+	Rings # \
+	Ideals
 
 VS         := $(MODULES:%=%.v)
 

@@ -358,28 +358,33 @@ Ltac repeat_subst_mor_of_type type :=
            | [ m : context[type] |- _ ] => subst_mor m; try clear m
          end.
 
-Ltac subst_by_rewrite a :=
+(* Using [rew] instead of [rew'] makes this fail... WTF? *)
+Ltac subst_by_rewrite_hyp_rew a H rew' :=
+  rew' H; clear H;
   match goal with
-    | [ H : ?Rel a ?b |- _ ] => try rewrite H in *; setoid_rewrite H; clear H;
-                                match goal with
-                                  | [ H : appcontext[a] |- _ ] => fail 2
-                                  | [ |- appcontext[a] ] => fail 2
-                                  | _ => idtac
-                                end
-    | [ H : ?Rel ?b a |- _ ] => try rewrite <- H in *; setoid_rewrite <- H; clear H;
-                                match goal with
-                                  | [ H : appcontext[a] |- _ ] => fail 2
-                                  | [ |- appcontext[a] ] => fail 2
-                                  | _ => idtac
-                                end
+    | [ H : appcontext[a] |- _ ] => fail 2 "Rewrite failed to clear all instances of" a
+    | [ |- appcontext[a] ] => fail 2 "Rewrite failed to clear all instances of" a
+    | _ => idtac
   end.
 
-Ltac subst_atomic a := (atomic a || fail "Non-atomic variable" a);
+Ltac subst_by_rewrite_hyp a H :=
+  subst_by_rewrite_hyp_rew a H ltac:(fun H => try rewrite H in *; try setoid_rewrite H).
+
+Ltac subst_by_rewrite_rev_hyp a H :=
+  subst_by_rewrite_hyp_rew a H ltac:(fun H => try rewrite <- H in *; try setoid_rewrite <- H).
+
+Ltac subst_by_rewrite a :=
+  match goal with
+    | [ H : ?Rel a ?b |- _ ] => subst_by_rewrite_hyp a H
+    | [ H : ?Rel ?b a |- _ ] => subst_by_rewrite_rev_hyp a H
+  end.
+
+Ltac subst_atomic a := first [ atomic a | fail "Non-atomic variable" a ];
                       subst_by_rewrite a.
 
 Ltac subst_rel rel :=
   match goal with
-    | [ H : rel ?a ?b |- _ ] => subst_atomic a || subst_atomic b
+    | [ H : rel ?a ?b |- _ ] => (atomic a; subst_by_rewrite_hyp a H) || (atomic b; subst_by_rewrite_rev_hyp b H)
   end.
 
 Ltac subst_body :=
