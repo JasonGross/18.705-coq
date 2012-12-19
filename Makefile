@@ -1,5 +1,6 @@
-MODULES    := Common # \
-	Notations
+MODULES    := Common \
+	Notations #\
+	Ring
 
 VS         := $(MODULES:%=%.v)
 
