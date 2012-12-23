@@ -71,16 +71,20 @@ Section ring.
     intros; ring.
   Qed.
 
-  Lemma rmul_x_O : forall x, x * 0 == 0.
+  Lemma Radd_0_r : forall x, x + 0 == x.
     intros; ring.
   Qed.
 
-  Lemma rmul_O_x : forall x, 0 * x == 0.
+  Lemma Rmul_0_r : forall x, x * 0 == 0.
     intros; ring.
   Qed.
 
-  Hint Resolve @rmul_x_O @rmul_O_x : rings.
-  Hint Rewrite @rmul_x_O @rmul_O_x : rings.
+  Lemma Rmul_1_r : forall x, x * 1 == x.
+    intros; ring.
+  Qed.
+
+  Hint Resolve (Rmul_0_l sth rsth rth) Rmul_0_r : rings.
+  Hint Rewrite (Rmul_0_l sth rsth rth) Rmul_0_r : rings.
 
   Record Runit :=
     {
@@ -115,4 +119,4 @@ Bind Scope ring_unit_scope with Runit.
 
 Notation "u ⁻¹" := (Runit_inverse u) : ring_unit_scope.
 
-Hint Rewrite @rmul_x_O @rmul_O_x : rings.
+Hint Rewrite @Radd_0_l @Radd_0_r @Rmul_1_l @Rmul_1_r @Rmul_0_l @Rmul_0_r : rings.
