@@ -68,6 +68,7 @@ Section ring.
   Qed.
 
   Lemma Rdistr_r : forall x y z : R, x * (y + z) == x * y + x * z.
+  Proof.
     intros; ring.
   Qed.
 
@@ -119,4 +120,4 @@ Bind Scope ring_unit_scope with Runit.
 
 Notation "u ⁻¹" := (Runit_inverse u) : ring_unit_scope.
 
-Hint Rewrite @Radd_0_l @Radd_0_r @Rmul_1_l @Rmul_1_r @Rmul_0_l @Rmul_0_r : rings.
+(* Hint Rewrite @Radd_0_l @Radd_0_r @Rmul_1_l @Rmul_1_r @Rmul_0_l @Rmul_0_r : rings. *)

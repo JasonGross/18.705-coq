@@ -7,7 +7,7 @@ Set Implicit Arguments.
 Local Open Scope ring_unit_scope.
 
 Ltac ideal_pre_simplify req :=
-  hnf; intros; destruct_head_hnf ex; split_and;
+  repeat intro; destruct_head_hnf ex; split_and;
   repeat subst_rel req;
   repeat split; trivial.
 
@@ -15,7 +15,7 @@ Ltac ideal_simplify rth req :=
   repeat match goal with
            | _ => eassumption
            | _ => reflexivity
-           | _ => rewrite (Rdistr_r rth)
+           | _ => rewrite (Rdistr_r rth _ _)
            | _ => rewrite (Rdistr_l rth)
            | _ => solve [ repeat esplit; try reflexivity; eauto with rings ]
            | _ => ring
@@ -83,7 +83,13 @@ Section ring.
   Local Notation "0" := rO.
   Local Notation "1" := rI.
 
-  Local Hint Resolve (rmul_x_O rth) (rmul_O_x rth) : rings.
+  Local Hint Resolve
+        (Rmul_0_l sth rsth rth) (Rmul_0_r rth)
+        (Rmul_1_l rth) (Rmul_1_r rth)
+        (Radd_0_l rth) (Radd_0_r rth) : rings.
+
+  Local Hint Extern 0 => reflexivity.
+  Local Hint Extern 0 => reflexivity : rings.
 
   Section ideal.
     Record ideal :=
@@ -125,7 +131,7 @@ Section ring.
     Lemma ideal_opp (A : ideal) : forall a, a ∈ A -> -a ∈ A.
       intros a H;
       rewrite (ring_opp_mul_def rth);
-      eauto with rings.
+      eauto 2 with rings.
     Qed.
 
     Section add_ideal.
@@ -134,8 +140,8 @@ Section ring.
       Let ideal_add_prop := (fun x => exists a b, a ∈ A /\ b ∈ B /\ x == a + b).
 
       Lemma ideal_add_proper' : forall a b, a == b -> a ∈ ideal_add_prop -> b ∈ ideal_add_prop.
-        ideal_pre_simplify req;
-        repeat esplit; eauto with rings; try solve [ symmetry; eauto with rings ].
+        ideal_pre_simplify req; repeat esplit;
+        ideal_pre_simplify req; eauto with rings.
       Qed.
 
       Local Instance ideal_add_proper : Morphisms.Proper
@@ -152,8 +158,8 @@ Section ring.
         refine {|
             Rideal := (fun x => exists a b, a ∈ A /\ b ∈ B /\ x == a + b)
           |};
-        abstract (
-            simpl; hnf; ideal_pre_simplify req;
+
+            ideal_pre_simplify req;
             match goal with
               | [ H0 : ?a0 ∈ (Rideal A), H1 : ?a1 ∈ (Rideal A), H2 : ?b0 ∈ (Rideal B), H3 : ?b1 ∈ (Rideal B) |- ?x ∈ _ ] =>
                 let H := fresh in assert (H : x == (a0 + a1) + (b0 + b1)) by ring;
@@ -161,7 +167,11 @@ Section ring.
               ring
               | _ => solve [ ideal_simplify rth req ]
               | _ => solve [ repeat esplit; ideal_simplify rth req ]
-            end
+              | _ => idtac
+            end.
+        repeat esplit; autorewrite with rings; try eassumption; try reflexivity.
+        eassumption.
+        eauto with rings.
           ).
       Defined.
     End add_ideal.
@@ -209,12 +219,13 @@ Section ring.
             ideal_pre_simplify req;
             eauto with rings;
             hnf in *;
-              match goal with
+              try match goal with
                 | [ H : ideal_mul_witness _, H' : ideal_mul_witness _ |- _ ] => fail 1
                 | [ H : ideal_mul_witness _ |- _ ] => induction H;
                                                      ideal_pre_simplify req;
                                                      try (rewrite (Rmul_assoc rth) || rewrite <- (Rmul_assoc rth));
                                                      ideal_simplify rth req
+                | _ => eapply (@ideal_mul_proper (_ * _)); [ | solve [ eauto with rings ] ]; solve [ eauto with rings ]
                 | _ => eapply (@ideal_mul_proper (_ * _)); solve [ eauto with rings ]
               end
           ).
@@ -344,9 +355,88 @@ Section ring.
           ring.
       - simpl; hnf; subst_rel req; repeat esplit; eauto with rings; ring.
       - simpl; hnf; subst_rel req; repeat esplit; eauto with rings; ring.
-      - repeat esplit; ideal_simplify rth req. try eassumption; try reflexivity; repeat subst_rel req; ring.
       - repeat esplit; try eassumption; try reflexivity; repeat subst_rel req; ring.
-      - repeat esplit; try eassumption; try reflexivity. repeat subst_rel req.
+      - repeat esplit; try eassumption; try reflexivity; repeat subst_rel req; ring.
+      - repeat esplit; try eassumption; try reflexivity; hnf in * |- ;
+        match goal with | [ H : ideal_mul_witness _ _ _ |- _ ] => induction H end;
+        eauto with rings.
+      - repeat esplit; try eassumption; try reflexivity; repeat subst_rel req.
+        ideal_pre_simplify req. econstructor; try constructor; repeat esplit; try eassumption;
+                                existentials_to_evars; ring_simplify; subst_body; try reflexivity;
+                                eauto with rings.
+      - repeat esplit; try eassumption; try reflexivity; hnf in * |- ;
+        match goal with | [ H : ideal_mul_witness _ _ _ |- _ ] => induction H end;
+        eauto with rings; ideal_pre_simplify req;
+        existentials_to_evars in *; ring_simplify; subst_body; try ring;
+        existentials_to_evars in *;
+        do 2 try match goal with
+                 | [ H : _ |- _ ] => progress ring_simplify in H
+               end.
+        ideal_pre_simplify req.
+        pose (Rdistr_l rth).
+        match goal with
+           | _ => eassumption
+           | _ => reflexivity
+           | _ => rewrite (Rdistr_r rth sth rsth)
+           | _ => rewrite (Rdistr_l rth)
+           | _ => solve [ repeat esplit; try reflexivity; eauto with rings ]
+           | _ => ring
+           | [ |- req 0 _ ] => symmetry
+           | [ |- req (?a + ?b) 0 ] => apply (radd_O_opp rth)
+           | _ => abstract eauto with rings
+           | _ => solve [ eauto with rings ]
+           | _ => rewrite (ring_opp_mul_def rth)
+           | _ => progress autorewrite with rings in *
+           | _ => repeat subst_rel req
+         end.
+
+
+        solve [ ideal_simplify rth req ].
+        ideal_pre_simplify req.
+
+        existentials_to_evars in *.
+existentials_to_evars_in_hyps.
+
+IHideal_mul_witness.
+Ltac existentials_to_evars_in_hyps :=
+  do 1 match goal with
+           | [ H : context[?x] |- _ ] => existential_to_evar x
+         end.
+existentials_to_evars_in_hyps.
+        existentials_to_evars_in IHideal_mul_witness.
+        ring_simplify in IHideal_mul_witness.
+          match goal with
+            | [ H : req ?a ?b |- _ ] => (first [ atomic a | fail "variable" a "is not atomic" ]; subst_by_rewrite_hyp a H)
+                                          || (first [ atomic b | fail "variable" b "is not atomic" ]; subst_by_rewrite_rev_hyp b H)
+          end.
+
+        subst_rel req.
+        ideal_simplify rth req.
+
+        hnf in *.
+        destruct
+        ideal_pre_simplify req. econstructor; try constructor; repeat esplit; try eassumption;
+                                existentials_to_evars; ring_simplify; subst_body; try reflexivity;
+                                eauto with rings.
+      - repeat esplit; try eassumption; try reflexivity; repeat subst_rel req; ring.
+        SearchAbout (_ == _ * _).
+        destruct rth.
+        Focus 2.
+        hnf.
+        constructor.
+ eapply (@ideal_mul_proper _ (_ * _)).
+
+
+        ideal_pre_simplify req.
+        destruct_head_hnf ideal_mul_witness; eauto with rings.
+        hnf in H.
+        destruct H.
+        eauto with rings.
+        ideal_pre_simplify req.
+        hnf in H.
+        compute in H.
+ ring_simplify in H.
+ ideal_simplify rth req.  repeat subst_rel req.
         hnf in * |- .
         induction H.
         ideal_simplify rth req.
